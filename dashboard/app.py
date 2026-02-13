@@ -53,6 +53,25 @@ def detect_outlier_months(monthly_df: pd.DataFrame, threshold: float = 2.0) -> p
 
 def main() -> None:
     st.set_page_config(page_title="Sales Dashboard", page_icon="📊", layout="wide")
+    st.markdown(
+        """
+        <style>
+        [data-testid="stMetric"] {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        [data-testid="stMetric"] label {
+            font-size: 0.85rem;
+        }
+        .kpi-spacer {
+            margin-bottom: 2rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     st.title("Sales Performance Analysis & Dashboard")
     st.caption("SQL + Python analytics project with interactive filtering and KPI tracking.")
 
@@ -104,7 +123,10 @@ def main() -> None:
     ].copy()
 
     if filtered_df.empty:
-        st.warning("No rows match the current filter selection.")
+        st.warning(
+            "No data for this selection. Try widening the date range or adding more regions, "
+            "channels, or categories."
+        )
         st.stop()
 
     total_revenue = float(filtered_df["net_revenue"].sum())
@@ -119,6 +141,8 @@ def main() -> None:
     c3.metric("Orders", f"{total_orders:,}")
     c4.metric("Avg Order Value", f"${avg_order_value:,.2f}")
     c5.metric("Profit Margin", f"{margin_pct:.2f}%")
+
+    st.markdown('<div class="kpi-spacer"></div>', unsafe_allow_html=True)
 
     monthly_df = (
         filtered_df.groupby(pd.Grouper(key="order_date", freq="MS"))
@@ -140,7 +164,11 @@ def main() -> None:
     )
 
     st.subheader("Monthly Trend")
-    st.line_chart(monthly_df.set_index("order_date")[["net_revenue", "profit"]])
+    monthly_chart_df = (
+        monthly_df.set_index("order_date")[["net_revenue", "profit"]]
+        .rename(columns={"net_revenue": "Net Revenue", "profit": "Profit"})
+    )
+    st.line_chart(monthly_chart_df)
 
     left, right = st.columns(2)
     with left:
