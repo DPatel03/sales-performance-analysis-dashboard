@@ -1,0 +1,10 @@
+data/raw/*.csv
+data/warehouse/*.db
+outputs/charts/*.png
+outputs/tables/*.csv
+**/__pycache__/
+*.pyc
+!data/raw/.gitkeep
+!data/warehouse/.gitkeep
+!outputs/charts/.gitkeep
+!outputs/tables/.gitkeep
