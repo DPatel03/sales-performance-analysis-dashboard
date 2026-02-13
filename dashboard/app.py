@@ -1,3 +1,4 @@
+import sys
 import sqlite3
 from pathlib import Path
 
@@ -7,6 +8,10 @@ import streamlit as st
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT_DIR / "data" / "warehouse" / "sales.db"
+
+# Ensure project root is on path so we can run data pipeline when deployed
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 BASE_QUERY = """
 SELECT
@@ -76,12 +81,24 @@ def main() -> None:
     st.caption("SQL + Python analytics project with interactive filtering and KPI tracking.")
 
     if not DB_PATH.exists():
-        st.error("Warehouse database not found.")
-        st.code(
-            "python src/generate_data.py\npython src/load_data.py\npython src/analyze_sales.py",
-            language="bash",
-        )
-        st.stop()
+        st.info("Building database for the first time (this may take a moment)...")
+        try:
+            from src.generate_data import main as run_generate_data
+            from src.load_data import main as run_load_data
+
+            with st.spinner("Generating sample data and loading into warehouse..."):
+                run_generate_data()
+                run_load_data()
+            st.success("Database ready. Reloading...")
+            st.rerun()
+        except Exception as e:
+            st.error("Could not build database automatically.")
+            st.code(
+                "python src/generate_data.py\npython src/load_data.py\npython src/analyze_sales.py",
+                language="bash",
+            )
+            st.exception(e)
+            st.stop()
 
     sales_df = load_sales_data(DB_PATH)
     if sales_df.empty:
